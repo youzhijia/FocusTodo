@@ -7,17 +7,21 @@
 
 ## 1. 一次性初始化 EC2
 
-登录 EC2（Ubuntu）后执行：
+登录 EC2 后执行：
 
 ```bash
-sudo apt update
-sudo apt install -y git
+# Ubuntu / Debian:
+# sudo apt update && sudo apt install -y git
+#
+# Amazon Linux:
+# sudo dnf install -y git || sudo yum install -y git
+
 git clone https://github.com/youzhijia/FocusTodo.git
 cd FocusTodo
 bash deploy/ec2-bootstrap.sh
 ```
 
-> 如果你不是 `ubuntu` 用户，请按你的系统用户执行。
+`deploy/ec2-bootstrap.sh` 已支持自动识别 `apt` / `dnf` / `yum`。
 
 ## 2. 在 GitHub 配置 Secrets
 
