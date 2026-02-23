@@ -1,0 +1,69 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ec2-main
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  DIST_ARCHIVE: "dist.tar.gz"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build app
+        run: npm run build
+
+      - name: Archive dist
+        run: tar -czf "${DIST_ARCHIVE}" dist
+
+      - name: Upload dist to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          source: ${{ env.DIST_ARCHIVE }}
+          target: /tmp
+
+      - name: Publish dist on EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -euo pipefail
+            APP_DIR="/var/www/focustodo"
+            TMP_ARCHIVE="/tmp/${{ env.DIST_ARCHIVE }}"
+
+            sudo mkdir -p "${APP_DIR}"
+            sudo find "${APP_DIR}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            sudo tar -xzf "${TMP_ARCHIVE}" -C "${APP_DIR}" --strip-components=1
+            sudo chown -R www-data:www-data "${APP_DIR}"
+            sudo find "${APP_DIR}" -type d -exec chmod 755 {} \;
+            sudo find "${APP_DIR}" -type f -exec chmod 644 {} \;
+            sudo nginx -t
+            sudo systemctl reload nginx
+            rm -f "${TMP_ARCHIVE}"

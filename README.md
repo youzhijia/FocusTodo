@@ -18,3 +18,7 @@ View your app in AI Studio: https://ai.studio/apps/d14e5142-5b8c-4c62-875f-4da4f
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Auto Deploy to EC2
+
+See [DEPLOY_EC2.md](DEPLOY_EC2.md) for GitHub Actions + EC2 setup.
